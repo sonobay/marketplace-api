@@ -3,12 +3,14 @@ import dotenv from "dotenv";
 import { deviceHandler, devicesHandler } from "./devices";
 import helmet from "helmet";
 import { midiHandler } from "./midi";
+import cors from "cors";
 
 dotenv.config();
 
 const app: Express = express();
 const port = process.env.PORT;
 
+app.use(cors());
 app.use(helmet());
 
 app.get("/devices", devicesHandler);
