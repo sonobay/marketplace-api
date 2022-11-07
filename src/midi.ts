@@ -14,7 +14,8 @@ export const midiHandler = async (req: Request, res: Response) => {
 
   if (error) {
     console.error("error fetching midi by id ", error);
-    return res.json({ error }).status(500);
+    res.status(500);
+    return res.json({ error });
   }
 
   return res.json(data);
