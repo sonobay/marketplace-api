@@ -8,7 +8,7 @@ export const midiHandler = async (req: Request, res: Response) => {
 
   const { error, data } = await supabase
     .from("midi")
-    .select()
+    .select("*, devices(*)")
     .eq("id", midiId)
     .single();
 
