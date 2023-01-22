@@ -1,12 +1,9 @@
-// app.get(`/devices/:deviceId`, async (req: Request, res: Response) => {
-//   const { deviceId } = req.params;
-
 import { PostgrestError } from "@supabase/supabase-js";
 import { Request, Response } from "express";
 import { createDB } from "./supabase";
 import { DeviceRow } from "./types/device.types";
 
-export const devicesHandler = async (req: Request, res: Response) => {
+export const devicesHandler = async (_: Request, res: Response) => {
   const supabase = await createDB();
 
   const { error, data } = (await supabase.from("devices").select()) as {
@@ -29,7 +26,7 @@ export const deviceHandler = async (req: Request, res: Response) => {
 
   const { error, data } = await supabase
     .from("devices")
-    .select("*, midi(createdBy, device, id, metadata)")
+    .select("*, midi_devices(midi(createdBy, id, metadata))")
     .eq("id", deviceId)
     .single();
 
