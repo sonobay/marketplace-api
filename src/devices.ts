@@ -3,16 +3,30 @@ import { Request, Response } from "express";
 import { createDB } from "./supabase";
 import { DeviceRow } from "./types/device.types";
 
-export const devicesHandler = async (_: Request, res: Response) => {
+export const devicesHandler = async (req: Request, res: Response) => {
+  const { manufacturer, name, offset, limit } = req.query;
   const supabase = await createDB();
 
-  const { error, data } = (await supabase.from("devices").select()) as {
+  const devices = supabase.from("devices").select();
+  if (manufacturer) {
+    devices.eq("manufacturer", manufacturer);
+  }
+
+  if (name) {
+    devices.eq("name", name);
+  }
+
+  if (offset) {
+    devices.range(+offset, limit ? +limit : 10);
+  }
+
+  const { error, data } = (await devices) as {
     error: PostgrestError | null;
     data: DeviceRow[];
   };
 
   if (error) {
-    console.error("error fetchDeviceByName ", error);
+    console.error("error devicesHandler ", error);
     return res.json({ error }).status(500);
   }
 
@@ -21,6 +35,8 @@ export const devicesHandler = async (_: Request, res: Response) => {
 
 export const deviceHandler = async (req: Request, res: Response) => {
   const { deviceId } = req.params;
+
+  console.log("deviceId: ", deviceId);
 
   const supabase = await createDB();
 
