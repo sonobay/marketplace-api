@@ -22,7 +22,7 @@ export const devicesHandler = async (req: Request, res: Response) => {
 
   const { error, data } = (await devices) as {
     error: PostgrestError | null;
-    data: DeviceRow[];
+    data: DeviceRow[] | null;
   };
 
   if (error) {
@@ -30,7 +30,7 @@ export const devicesHandler = async (req: Request, res: Response) => {
     return res.json({ error }).status(500);
   }
 
-  return res.json(data);
+  return res.json(data ?? []);
 };
 
 export const deviceHandler = async (req: Request, res: Response) => {
