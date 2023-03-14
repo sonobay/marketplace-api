@@ -33,7 +33,7 @@ const _fetchByUser = async ({
 }) => {
   const { error, data } = (await supabase
     .from("listings")
-    .select("*, midi_devices(midi(id, created_by, metadata)")
+    .select("*, midi(*)")
     .eq("seller_address", sellerAddress)) as unknown as {
     error: PostgrestError | null;
     data: ListingRow[];
@@ -147,7 +147,14 @@ export const listingsHandler = async (req: Request, res: Response) => {
       console.error(
         `error fetchAll listings - fetchByUser - ${{ sellerAddress: userId }}`
       );
-      return;
+      console.error(error);
+      return res
+        .json({
+          error: `error fetchAll listings - fetchByUser - ${{
+            sellerAddress: userId,
+          }}`,
+        })
+        .status(500);
     }
 
     listings = data;
