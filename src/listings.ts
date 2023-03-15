@@ -13,16 +13,34 @@ const _fetchByUserAndDevice = async ({
   deviceId: string;
   supabase: SupabaseClient<any, "public", any>;
 }) => {
-  const { error, data } = (await supabase
+  let { error, data } = (await supabase
     .from("listings")
-    .select("*, midi_devices(midi(id, created_by, metadata), device")
-    .eq("seller_address", sellerAddress)
-    .eq("midi_devices.device", deviceId)) as unknown as {
+    .select("*, midi(*)")
+    .eq("seller_address", sellerAddress)) as unknown as {
+    error: PostgrestError | null;
+    data: ListingRow[];
+  } as unknown as {
     error: PostgrestError | null;
     data: ListingRow[];
   };
 
-  return { error, data };
+  const tokenIds = data.map((_row) => _row.token_id);
+
+  let midiDevicesRes = (await supabase
+    .from("midi_devices")
+    .select("*")
+    .eq("midi", tokenIds)) as {
+    error: PostgrestError | null;
+    data: MidiDevice[] | null;
+  };
+
+  const listings = data.filter((_listing) => {
+    return midiDevicesRes.data?.some(
+      (_midiDevice: MidiDevice) => _midiDevice.device === deviceId
+    );
+  });
+
+  return { error, data: listings };
 };
 const _fetchByUser = async ({
   sellerAddress,
@@ -57,22 +75,14 @@ const _fetchByDevice = async ({
   };
 
   if (midiDevicesRes.error) {
-    console.log("error is: ", midiDevicesRes.error);
     return { error: midiDevicesRes.error };
   }
 
   if (!midiDevicesRes.data) {
-    console.log("error is: ", midiDevicesRes.error);
     return { error: "No midi devices found" };
   }
 
-  let tokenIds: number[] = [];
-
-  // for (midiDevicesRes.data as midiDevice) {}
-  for (const midiDevice of midiDevicesRes.data) {
-    console.log("midi device token id is: ");
-    tokenIds.push(midiDevice.midi);
-  }
+  let tokenIds = midiDevicesRes.data.map((_row) => _row.midi);
 
   const listingsRes = (await supabase
     .from("listings")
@@ -126,13 +136,13 @@ export const listingsHandler = async (req: Request, res: Response) => {
       supabase,
     });
     if (error) {
-      console.error(
-        `error fetchAll listings - fetchByUserAndDevice ${{
+      console.error(error);
+      return res.json({
+        error: `error fetchAll listings - fetchByUserAndDevice ${{
           sellerAddress: userId,
           deviceId,
-        }}`
-      );
-      return;
+        }}`,
+      });
     }
 
     listings = data;
