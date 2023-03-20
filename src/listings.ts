@@ -21,8 +21,12 @@ const _fetchByUserAndDevice = async ({
     data: ListingRow[];
   } as unknown as {
     error: PostgrestError | null;
-    data: ListingRow[];
+    data: ListingRow[] | null;
   };
+
+  if (!data) {
+    return { error, data };
+  }
 
   const tokenIds = data.map((_row) => _row.token_id);
 
@@ -54,7 +58,7 @@ const _fetchByUser = async ({
     .select("*, midi(*)")
     .eq("seller_address", sellerAddress)) as unknown as {
     error: PostgrestError | null;
-    data: ListingRow[];
+    data: ListingRow[] | null;
   };
 
   return { error, data };
@@ -145,7 +149,7 @@ export const listingsHandler = async (req: Request, res: Response) => {
       });
     }
 
-    listings = data;
+    listings = data ?? [];
   } else if (userId && !deviceId) {
     // fetch by user for any device
     const { error, data } = await _fetchByUser({
@@ -167,7 +171,7 @@ export const listingsHandler = async (req: Request, res: Response) => {
         .status(500);
     }
 
-    listings = data;
+    listings = data ?? [];
   } else if (!userId && deviceId) {
     // fetch by device
     const { error, data } = await _fetchByDevice({ deviceId, supabase });
