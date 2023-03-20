@@ -92,18 +92,22 @@ const _fetchByDevice = async ({
   const listingsRes = (await supabase
     .from("listings")
     .select("*")
-    .eq("token_id", tokenIds)) as unknown as {
+    .in("token_id", tokenIds)) as unknown as {
     error: PostgrestError | null;
     data: ListingRow[];
   };
 
-  const midiRes = await supabase.from("midi").select("*").eq("id", tokenIds);
+  const midiRes = await supabase.from("midi").select("*").in("id", tokenIds);
 
-  const listings = listingsRes.data.map((_listing) => {
-    const midi = midiRes.data?.find((_midi) => _midi.id === _listing.token_id);
-    _listing.midi = midi as MIDIRow;
-    return _listing;
-  });
+  const listings = listingsRes.data
+    ? listingsRes.data.map((_listing) => {
+        const midi = midiRes.data?.find(
+          (_midi) => _midi.id === _listing.token_id
+        ) as MIDIRow;
+        _listing.midi = midi;
+        return _listing;
+      })
+    : [];
 
   return {
     error: listingsRes.error ?? midiRes.error,
