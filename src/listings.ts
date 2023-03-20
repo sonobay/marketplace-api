@@ -2,6 +2,7 @@ import { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
 import { Request, Response } from "express";
 import { createDB } from "./supabase";
 import { ListingRow } from "./types/listing.types";
+import { MIDIRow } from "./types/midi.types";
 import { MidiDevice } from "./types/midiDevice";
 
 const _fetchByUserAndDevice = async ({
@@ -100,7 +101,7 @@ const _fetchByDevice = async ({
 
   const listings = listingsRes.data.map((_listing) => {
     const midi = midiRes.data?.find((_midi) => _midi.id === _listing.token_id);
-    _listing.midi = midi;
+    _listing.midi = midi as MIDIRow;
     return _listing;
   });
 
