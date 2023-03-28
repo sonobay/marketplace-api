@@ -115,28 +115,42 @@ const _fetchByDevice = async ({
   };
 };
 
+const fetchAll = async (supabase: SupabaseClient<any, "public", any>) => {
+  const { error, data } = (await supabase
+    .from("listings")
+    .select("*, midi(*)")) as unknown as {
+    error: PostgrestError | null;
+    data: ListingRow[] | null;
+  };
+
+  return { error, data };
+};
+
+/** TODO: paginate results */
 export const listingsHandler = async (req: Request, res: Response) => {
   let { userId, deviceId } = req.query;
 
+  const supabase = await createDB();
+
+  let listings: ListingRow[] = [];
+
+  /** Search all listings */
   if (!userId && !deviceId) {
-    console.error("neither userId nor deviceId provided");
-    return res
-      .json({ error: "neither userId nor deviceId provided" })
-      .status(404);
+    const { data, error } = (await fetchAll(supabase)) ?? [];
+
+    if (error) {
+      return res.json({
+        error,
+      });
+    }
+
+    listings = data ?? [];
   }
 
   userId = userId?.toString();
   deviceId = deviceId?.toString();
 
-  const supabase = await createDB();
-
-  if (!userId && !deviceId) {
-    console.error("neither userId nor deviceId provided");
-    return;
-  }
-
-  let listings: ListingRow[];
-
+  /** Search by user and device */
   if (userId && deviceId) {
     // fetch by user for single device
     const { error, data } = await _fetchByUserAndDevice({
@@ -155,7 +169,10 @@ export const listingsHandler = async (req: Request, res: Response) => {
     }
 
     listings = data ?? [];
-  } else if (userId && !deviceId) {
+  }
+
+  /** Search by user */
+  if (userId && !deviceId) {
     // fetch by user for any device
     const { error, data } = await _fetchByUser({
       sellerAddress: userId,
@@ -177,7 +194,12 @@ export const listingsHandler = async (req: Request, res: Response) => {
     }
 
     listings = data ?? [];
-  } else if (!userId && deviceId) {
+  }
+
+  /**
+   * Search by Device
+   */
+  if (!userId && deviceId) {
     // fetch by device
     const { error, data } = await _fetchByDevice({ deviceId, supabase });
 
@@ -193,8 +215,6 @@ export const listingsHandler = async (req: Request, res: Response) => {
     }
 
     listings = data ?? [];
-  } else {
-    listings = [];
   }
 
   return res.json({ listings });
