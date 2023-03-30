@@ -1,5 +1,57 @@
+import { PostgrestError } from "@supabase/supabase-js";
 import { Request, Response } from "express";
 import { createDB } from "./supabase";
+import { MidiDevice } from "./types/midiDevice";
+
+export const midisHandler = async (req: Request, res: Response) => {
+  const { tag, page, deviceId } = req.query;
+  const limit = 12;
+  const supabase = await createDB();
+
+  const query = supabase.from("midi").select("*, midi_devices(*)");
+
+  if (deviceId) {
+    console.log("setting device id: ", deviceId);
+    query.eq("midi_devices.device", deviceId);
+
+    const { error, data } = (await supabase
+      .from("midi_devices")
+      .select("*")
+      .eq("device", deviceId)) as {
+      error: PostgrestError | null;
+      data: MidiDevice[];
+    };
+
+    if (error) {
+      return res.json(error);
+    }
+
+    const midiIds = data.map((_midiDevice) => _midiDevice.midi);
+
+    query.in("id", midiIds);
+  }
+
+  if (tag) {
+    query.contains("tags", [tag.toString().toUpperCase()]);
+  }
+
+  const startRange = (page ? +page : 0) * limit;
+  const endRange = startRange + limit - 1;
+
+  query.range(startRange, endRange);
+
+  const { error, data } = await query;
+
+  if (error) {
+    console.error("error fetching midi", error);
+    res.status(500);
+    return res.json({ error });
+  }
+
+  console.log(data);
+
+  return res.json(data);
+};
 
 export const midiHandler = async (req: Request, res: Response) => {
   const { midiId } = req.params;

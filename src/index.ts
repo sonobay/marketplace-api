@@ -2,7 +2,7 @@ import express, { Express } from "express";
 import dotenv from "dotenv";
 import { deviceHandler, devicesHandler } from "./devices";
 import helmet from "helmet";
-import { midiHandler } from "./midi";
+import { midiHandler, midisHandler } from "./midi";
 import cors from "cors";
 import { listingsHandler } from "./listings";
 
@@ -17,6 +17,7 @@ app.use(helmet());
 app.get("/devices", devicesHandler);
 app.get("/devices/:deviceId", deviceHandler);
 app.get("/midi/:midiId", midiHandler);
+app.get("/midi", midisHandler);
 app.get("/listings", listingsHandler);
 
 app.listen(port, () => {
