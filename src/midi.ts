@@ -17,7 +17,7 @@ export const midisHandler = async (req: Request, res: Response) => {
     const { error, data } = (await supabase
       .from("midi_devices")
       .select("*")
-      .eq("device", deviceId)) as {
+      .eq("device", deviceId)) as unknown as {
       error: PostgrestError | null;
       data: MidiDevice[];
     };
