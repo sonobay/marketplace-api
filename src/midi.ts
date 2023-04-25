@@ -4,12 +4,15 @@ import { createDB } from "./supabase";
 import { MidiDevice } from "./types/midiDevice";
 
 export const midisHandler = async (req: Request, res: Response) => {
-  const { tag, page, deviceId } = req.query;
+  const { page, deviceId, search } = req.query;
   const limit = 12;
   const supabase = await createDB();
 
   const query = supabase.from("midi").select("*, midi_devices(*)");
 
+  /**
+   * search for MIDI by device id
+   */
   if (deviceId) {
     console.log("setting device id: ", deviceId);
     query.eq("midi_devices.device", deviceId);
@@ -31,8 +34,18 @@ export const midisHandler = async (req: Request, res: Response) => {
     query.in("id", midiIds);
   }
 
-  if (tag) {
-    query.contains("tags", [tag.toString().toUpperCase()]);
+  /**
+   * Search for MIDI by search term
+   */
+  if (search) {
+    /**
+     * Searching for name or tag
+     */
+    query.or(
+      `tags.cs.{${search
+        .toString()
+        .toUpperCase()}}, metadata->>name.ilike.*${search.toString()}*`
+    );
   }
 
   const startRange = (page ? +page : 0) * limit;
